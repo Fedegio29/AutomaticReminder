@@ -2,8 +2,11 @@ name: Telegram Reminder
 
 on:
   schedule:
-    - cron: "0 6 * * *"
-  workflow_dispatch:
+    - cron: "0 6 * * *"   # 08:00 ora italiana (UTC+2)
+  workflow_dispatch:       # permette di testarlo manualmente
+
+permissions:
+  contents: write          # NECESSARIO per fare commit nel repository
 
 jobs:
   run-reminder:
@@ -24,7 +27,8 @@ jobs:
       - name: Run reminder script
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
+          CHAT_ID_1: ${{ secrets.CHAT_ID_1 }}
+          CHAT_ID_2: ${{ secrets.CHAT_ID_2 }}
         run: python reminder.py
 
       - name: Commit updated CSV
