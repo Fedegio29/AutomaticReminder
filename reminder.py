@@ -19,7 +19,7 @@ CHAT_IDS = [
 def send_message(text):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     for chat_id in CHAT_IDS:
-        if chat_id:  # evita errori se un ID è vuoto
+        if chat_id:
             requests.post(url, data={"chat_id": chat_id, "text": text})
 
 # ---------------------------------------------------------
@@ -27,8 +27,8 @@ def send_message(text):
 # ---------------------------------------------------------
 df = pd.read_csv("reminder.csv")
 
-# Assicura che la colonna date sia datetime
-df["date"] = pd.to_datetime(df["date"], format="%d/%m/%Y")
+# Converte la colonna "data" in datetime
+df["data"] = pd.to_datetime(df["data"], format="%Y-%m-%d")
 
 today = datetime.now().date()
 seven_days = today + timedelta(days=7)
@@ -40,38 +40,39 @@ messages = []
 # 4) Controlla scadenze
 # ---------------------------------------------------------
 for index, row in df.iterrows():
-    name = row["name"]
-    date = row["date"].date()
-    recurring = row.get("recurring", "no").lower()
+    titolo = row["titolo"]
+    descrizione = row["descrizione"]
+    date = row["data"].date()
+    ricorrenza = int(row["ricorrenza"])  # giorni
 
     # 7 giorni prima
     if date == seven_days:
-        messages.append(f"⏳ Mancano 7 giorni a: {name} ({date.strftime('%d/%m/%Y')})")
+        messages.append(f"⏳ Mancano 7 giorni a: {titolo} ({date})")
 
     # 1 giorno prima
     if date == one_day:
-        messages.append(f"⚠️ Domani: {name} ({date.strftime('%d/%m/%Y')})")
+        messages.append(f"⚠️ Domani: {titolo} ({date})")
 
     # Oggi
     if date == today:
-        messages.append(f"🎉 Oggi: {name}!")
+        messages.append(f"🎉 Oggi: {titolo}! — {descrizione}")
 
-        # Se è ricorrente → aggiorna al prossimo anno
-        if recurring == "yes":
-            new_date = date.replace(year=date.year + 1)
-            df.at[index, "date"] = new_date
+        # Se ricorrenza > 0 → aggiorna la data
+        if ricorrenza > 0:
+            new_date = date + timedelta(days=ricorrenza)
+            df.at[index, "data"] = new_date
 
 # ---------------------------------------------------------
 # 5) Invia i messaggi
 # ---------------------------------------------------------
 if messages:
-    final_message = "📅 *Promemoria giornaliero*\n\n" + "\n".join(messages)
+    final_message = "📅 Promemoria giornaliero\n\n" + "\n".join(messages)
     send_message(final_message)
 else:
     send_message("📭 Nessun promemoria per oggi.")
 
 # ---------------------------------------------------------
-# 6) Salva il CSV aggiornato (ricorrenze)
+# 6) Salva il CSV aggiornato
 # ---------------------------------------------------------
-df["date"] = df["date"].dt.strftime("%d/%m/%Y")
+df["data"] = df["data"].dt.strftime("%Y-%m-%d")
 df.to_csv("reminder.csv", index=False)
