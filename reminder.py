@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 import requests
 import os
 
-BOT_TOKEN = "8702176784:AAGoJxOpydpaANhEsGScf2KAObhf3EzY3S8"
-CHAT_ID = "2092560360"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 def log(msg):
     print(f"[LOG] {msg}")
