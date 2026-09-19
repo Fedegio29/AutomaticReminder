@@ -1,104 +1,77 @@
-import pandas as pd
-from datetime import datetime, timedelta
-import requests
 import os
+import pandas as pd
+import requests
+from datetime import datetime, timedelta
 
+# ---------------------------------------------------------
+# 1) Lettura dei Secrets da GitHub Actions
+# ---------------------------------------------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
 
-def log(msg):
-    print(f"[LOG] {msg}")
+CHAT_IDS = [
+    os.getenv("CHAT_ID_1"),
+    os.getenv("CHAT_ID_2")
+]
 
-def send_telegram_message(text):
-    try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        params = {"chat_id": CHAT_ID, "text": text}
-        r = requests.get(url, params=params)
-        log(f"Messaggio inviato. Risposta Telegram: {r.text}")
-    except Exception as e:
-        log(f"ERRORE nell'invio del messaggio: {e}")
+# ---------------------------------------------------------
+# 2) Funzione per inviare messaggi Telegram
+# ---------------------------------------------------------
+def send_message(text):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    for chat_id in CHAT_IDS:
+        if chat_id:  # evita errori se un ID è vuoto
+            requests.post(url, data={"chat_id": chat_id, "text": text})
 
-def check_reminders():
-    log("=== Avvio script reminder ricorrenti ===")
+# ---------------------------------------------------------
+# 3) Carica il CSV
+# ---------------------------------------------------------
+df = pd.read_csv("reminder.csv")
 
-    if not os.path.exists("reminder.csv"):
-        log("ERRORE: reminder.csv NON trovato!")
-        return
+# Assicura che la colonna date sia datetime
+df["date"] = pd.to_datetime(df["date"], format="%d/%m/%Y")
 
-    df = pd.read_csv("reminder.csv")
-    log("Contenuto CSV:")
-    log(df)
+today = datetime.now().date()
+seven_days = today + timedelta(days=7)
+one_day = today + timedelta(days=1)
 
-    today = datetime.now().date()
-    log(f"Giorno attuale: {today}")
+messages = []
 
-    updated = False  # per sapere se dobbiamo riscrivere il CSV
+# ---------------------------------------------------------
+# 4) Controlla scadenze
+# ---------------------------------------------------------
+for index, row in df.iterrows():
+    name = row["name"]
+    date = row["date"].date()
+    recurring = row.get("recurring", "no").lower()
 
-    for index, row in df.iterrows():
-        log(f"Controllo reminder #{index}: {row['titolo']}")
+    # 7 giorni prima
+    if date == seven_days:
+        messages.append(f"⏳ Mancano 7 giorni a: {name} ({date.strftime('%d/%m/%Y')})")
 
-        try:
-            reminder_day = datetime.strptime(row["data"], "%Y-%m-%d").date()
-        except Exception as e:
-            log(f"ERRORE parsing data '{row['data']}': {e}")
-            continue
+    # 1 giorno prima
+    if date == one_day:
+        messages.append(f"⚠️ Domani: {name} ({date.strftime('%d/%m/%Y')})")
 
-        ricorrenza = int(row["ricorrenza"])
-        log(f"Ricorrenza: ogni {ricorrenza} giorni")
+    # Oggi
+    if date == today:
+        messages.append(f"🎉 Oggi: {name}!")
 
-        diff = (reminder_day - today).days
-        log(f"Giorni alla scadenza: {diff}")
+        # Se è ricorrente → aggiorna al prossimo anno
+        if recurring == "yes":
+            new_date = date.replace(year=date.year + 1)
+            df.at[index, "date"] = new_date
 
-        # 7 giorni prima
-        if diff == 7:
-            log("→ Mancano 7 giorni: invio recap")
-            msg = (
-                f"📅 Promemoria (7 giorni prima)\n"
-                f"🔔 {row['titolo']}\n"
-                f"{row['descrizione']}\n"
-                f"📆 Scadenza: {row['data']}"
-            )
-            send_telegram_message(msg)
+# ---------------------------------------------------------
+# 5) Invia i messaggi
+# ---------------------------------------------------------
+if messages:
+    final_message = "📅 *Promemoria giornaliero*\n\n" + "\n".join(messages)
+    send_message(final_message)
+else:
+    send_message("📭 Nessun promemoria per oggi.")
 
-        # 1 giorno prima
-        elif diff == 1:
-            log("→ Mancano 24 ore: invio recap")
-            msg = (
-                f"⏳ Promemoria (1 giorno prima)\n"
-                f"🔔 {row['titolo']}\n"
-                f"{row['descrizione']}\n"
-                f"📆 Scadenza: {row['data']}"
-            )
-            send_telegram_message(msg)
-
-        # Scadenza oggi → aggiorna la data
-        elif diff == 0:
-            log("→ Scadenza OGGI: invio messaggio e aggiorno la data")
-
-            msg = (
-                f"🔔 Scadenza OGGI!\n"
-                f"{row['titolo']}\n"
-                f"{row['descrizione']}\n"
-                f"📆 Scadenza: {row['data']}\n"
-                f"🔁 Ricorrenza: ogni {ricorrenza} giorni"
-            )
-            send_telegram_message(msg)
-
-            # aggiorna la data
-            nuova_data = reminder_day + timedelta(days=ricorrenza)
-            df.at[index, "data"] = nuova_data.strftime("%Y-%m-%d")
-            updated = True
-            log(f"Nuova data impostata: {nuova_data}")
-
-        else:
-            log("→ Nessun recap da inviare.")
-
-    # Se abbiamo aggiornato il CSV, riscriviamolo
-    if updated:
-        df.to_csv("reminder.csv", index=False)
-        log("CSV aggiornato con le nuove date.")
-
-    log("=== Fine script ===")
-
-if __name__ == "__main__":
-    check_reminders()
+# ---------------------------------------------------------
+# 6) Salva il CSV aggiornato (ricorrenze)
+# ---------------------------------------------------------
+df["date"] = df["date"].dt.strftime("%d/%m/%Y")
+df.to_csv("reminder.csv", index=False)
