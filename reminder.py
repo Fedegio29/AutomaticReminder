@@ -78,7 +78,7 @@ for index, row in df.iterrows():
 # 5) Invia i messaggi
 # ---------------------------------------------------------
 if messages:
-    final_message = "📅 Promemoria giornaliero (versione ironica)\n\n" + "\n\n".join(messages)
+    final_message = "📅 Promemoria giornaliero \n\n" + "\n\n".join(messages)
     send_message(final_message)
 else:
     send_message(
