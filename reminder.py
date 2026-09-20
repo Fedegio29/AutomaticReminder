@@ -67,7 +67,6 @@ for index, row in df.iterrows():
     if date == today:
         messages.append(
             f"🎉 Oggi è il grande giorno: {titolo}!\n"
-            f"{descrizione}\n"
             f"Coraggio, ce la puoi fare. 💪😂"
         )
 
