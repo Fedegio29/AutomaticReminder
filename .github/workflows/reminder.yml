@@ -1,9 +1,13 @@
+```yaml
 name: Telegram Reminder
 
 on:
   schedule:
-    - cron: "55 9 * * *"   # 11:25 ora italiana (UTC+2)
-  workflow_dispatch:
+    - cron: "*/5 * * * *"   # Test: ogni 5 minuti
+  workflow_dispatch:         # Avvio manuale
+  push:
+    branches:
+      - main                  # Test: parte a ogni push su main
 
 permissions:
   contents: write
@@ -13,6 +17,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug trigger
+        run: |
+          echo "================================"
+          echo "EVENT: ${{ github.event_name }}"
+          echo "REF:   ${{ github.ref }}"
+          echo "SHA:   ${{ github.sha }}"
+          echo "RUN:   ${{ github.run_id }}"
+          echo "================================"
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -39,3 +52,4 @@ jobs:
           git commit -m "Update reminder dates"
           git push
         continue-on-error: true
+```
