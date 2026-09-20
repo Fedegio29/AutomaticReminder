@@ -1,6 +1,7 @@
-titolo,descrizione,data,anni,mesi,giorni
-Pagare affitto,Scadenza mensile,2026-09-01,0,1,0
-Assicurazione auto,Rinnovo annuale,2026-06-10,1,0,0
-Prova funzionamento trigger,Prima prova,2026-09-21,0,1,0
-Prova funzionamento trigger,Seconda prova,2026-09-22,0,0,10
-Prova funzionamento trigger,Terza prova,2026-09-27,0,0,5
+titolo,data,anni,mesi,giorni
+Pagare affitto,2026-09-01,0,1,0
+Assicurazione auto,2026-06-10,1,0,0
+Compleanno Nonno,2026-11-13,1,0,0
+Prima prova funzionamento trigger,2026-09-21,0,1,0
+Seconda prova funzionamento trigger,2026-09-22,0,0,10
+Terza prova funzionamento trigger,2026-09-28,0,0,5
