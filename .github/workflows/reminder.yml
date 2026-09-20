@@ -2,11 +2,9 @@ name: Telegram Reminder
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # Test: ogni 5 minuti
-  workflow_dispatch:         # Avvio manuale
-  push:
-    branches:
-      - main                  # Test: parte a ogni push su main
+    - cron: "48 12 * * *"
+      timezone: "Europe/Rome"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,15 +14,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Debug trigger
-        run: |
-          echo "================================"
-          echo "EVENT: ${{ github.event_name }}"
-          echo "REF:   ${{ github.ref }}"
-          echo "SHA:   ${{ github.sha }}"
-          echo "RUN:   ${{ github.run_id }}"
-          echo "================================"
-
       - name: Checkout repository
         uses: actions/checkout@v3
 
