@@ -1,4 +1,3 @@
-```yaml
 name: Telegram Reminder
 
 on:
@@ -52,4 +51,3 @@ jobs:
           git commit -m "Update reminder dates"
           git push
         continue-on-error: true
-```
