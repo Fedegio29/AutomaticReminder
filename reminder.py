@@ -27,8 +27,6 @@ def send_message(text):
 # 3) Carica il CSV
 # ---------------------------------------------------------
 df = pd.read_csv("reminder.csv")
-
-# Converte la colonna "data" in datetime
 df["data"] = pd.to_datetime(df["data"], format="%Y-%m-%d", errors="coerce")
 
 today = datetime.now().date()
@@ -36,9 +34,33 @@ seven_days = today + timedelta(days=7)
 one_day = today + timedelta(days=1)
 
 messages = []
+rows_to_delete = []  # per eliminare i one-shot
 
 # ---------------------------------------------------------
-# 4) Controlla scadenze
+# 4) Funzione per messaggi personalizzati
+# ---------------------------------------------------------
+def categoria_message(titolo):
+    t = titolo.lower()
+
+    if "compleanno" in t:
+        return f"🎉 Oggi si festeggia: {titolo}!\nPrepara gli auguri… e magari anche una torta. 🎂😄"
+
+    if "auto" in t:
+        return f"🚗 Oggi tocca alla tua auto: {titolo}.\nHai voluto la bicicletta, ora pedala. 😅"
+
+    if "pagare" in t or "rinnovo" in t or "pagamento" in t:
+        return f"💸 Oggi scade: {titolo}.\nIl portafoglio piange, ma tu resisti. 😂"
+
+    if "lezione" in t or "corso" in t:
+        return f"📚 Oggi hai: {titolo}.\nNiente scuse, si studia! 💪😄"
+
+    if "visita" in t or "medico" in t or "prenotare" in t:
+        return f"🏥 Oggi devi: {titolo}.\nLa salute prima di tutto. 😅"
+
+    return f"🔔 Oggi è il giorno di: {titolo}.\nCoraggio, si vola! 💪😄"
+
+# ---------------------------------------------------------
+# 5) Controlla scadenze
 # ---------------------------------------------------------
 for index, row in df.iterrows():
     titolo = row["titolo"]
@@ -64,17 +86,25 @@ for index, row in df.iterrows():
 
     # Oggi
     if date == today:
-        messages.append(
-            f"🎉 Oggi è il grande giorno: {titolo}!\n"
-            f"Coraggio, ce la puoi fare. 💪😂"
-        )
+        # Messaggio personalizzato
+        messages.append(categoria_message(titolo))
 
-        # Aggiorna la data con anni/mesi/giorni
-        new_date = date + relativedelta(years=anni, months=mesi, days=giorni)
-        df.at[index, "data"] = new_date
+        # Se è one-shot → elimina
+        if anni == 0 and mesi == 0 and giorni == 0:
+            rows_to_delete.append(index)
+        else:
+            # Aggiorna la data con ricorrenza
+            new_date = date + relativedelta(years=anni, months=mesi, days=giorni)
+            df.at[index, "data"] = new_date
 
 # ---------------------------------------------------------
-# 5) Invia i messaggi
+# 6) Elimina i one-shot
+# ---------------------------------------------------------
+if rows_to_delete:
+    df = df.drop(rows_to_delete)
+
+# ---------------------------------------------------------
+# 7) Invia i messaggi
 # ---------------------------------------------------------
 if messages:
     final_message = "📅 Promemoria giornaliero\n\n" + "\n\n".join(messages)
@@ -86,7 +116,7 @@ else:
     )
 
 # ---------------------------------------------------------
-# 6) Salva il CSV aggiornato
+# 8) Salva il CSV aggiornato
 # ---------------------------------------------------------
 df["data"] = pd.to_datetime(df["data"], errors="coerce")
 df["data"] = df["data"].dt.strftime("%Y-%m-%d")

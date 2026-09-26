@@ -2,7 +2,7 @@ name: Telegram Reminder
 
 on:
   schedule:
-    - cron: "08 06 * * *"
+    - cron: "08 01 * * *"
   workflow_dispatch:
 
 permissions:
